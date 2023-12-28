@@ -308,6 +308,24 @@ def messages_destroy(message_id):
     return redirect(f"/users/{g.user.id}")
 
 
+@app.route('/users/toggle_like/<int:message_id>', methods=["POST"])
+def toggle_like(message_id):
+    """Toggle a like to a message"""
+
+    if not g.user:
+        flash("Access unauthorized.", "danger")
+        return redirect("/")
+    
+    liked_message = Message.query.get(message_id)
+
+    if liked_message in g.user.likes:
+        g.user.likes.remove(liked_message)
+    else:
+        g.user.likes.append(liked_message)
+    db.session.commit()
+
+    return redirect("/")
+
 ##############################################################################
 # Homepage and error pages
 
