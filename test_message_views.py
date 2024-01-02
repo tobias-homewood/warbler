@@ -51,6 +51,11 @@ class MessageViewTestCase(TestCase):
 
         db.session.commit()
 
+    def login(self):
+        """Log in user."""
+        with self.client.session_transaction() as session:
+            session[CURR_USER_KEY] = self.testuser.id
+
     def test_add_message(self):
         """Can use add a message?"""
 
@@ -71,3 +76,101 @@ class MessageViewTestCase(TestCase):
 
             msg = Message.query.one()
             self.assertEqual(msg.text, "Hello")
+
+    def test_add_not_authenticated(self):
+        """Can user add a message when not logged in?"""
+
+        resp = self.client.post("/messages/new", data={"text": "Hello"},
+                        follow_redirects=True)
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn("Access unauthorized", str(resp.data))
+
+    def test_message_show(self):
+        """Can user see message?"""
+
+        m = Message(
+            id=1234,
+            text="a test message",
+            user_id=self.testuser.id
+        )
+
+        db.session.add(m)
+        db.session.commit()
+
+        resp = self.client.get(f'/messages/{m.id}')
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn(m.text, str(resp.data))
+
+    def test_message_delete(self):
+        """Can user delete a message?"""
+        self.login()
+        m = Message(
+            id=1234,
+            text="a test message",
+            user_id=self.testuser.id
+        )
+
+        db.session.add(m)
+        db.session.commit()
+
+        resp = self.client.post(f'/messages/{m.id}/delete', follow_redirects=True)
+        self.assertEqual(resp.status_code, 200)
+
+        m = Message.query.get(m.id)
+        self.assertIsNone(m)
+
+    def test_message_delete_no_authentication(self):
+        """Can user delete a message without authentication?"""
+        m = Message(
+            id=1234,
+            text="a test message",
+            user_id=self.testuser.id
+        )
+
+        db.session.add(m)
+        db.session.commit()
+
+        resp = self.client.post(f'/messages/{m.id}/delete', follow_redirects=True)
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn("Access unauthorized", str(resp.data))
+
+        m = Message.query.get(m.id)
+        self.assertIsNotNone(m)
+
+    def test_message_like(self):
+        """Can user like a message?"""
+        self.login()
+        m = Message(
+            id=1234,
+            text="a test message to be liked",
+            user_id=self.testuser.id
+        )
+
+        db.session.add(m)
+        db.session.commit()
+
+        resp = self.client.post(f'/users/toggle_like/{m.id}', follow_redirects=True)
+        self.assertEqual(resp.status_code, 200)
+
+        # retrieve the updated user from the db
+        self.testuser = db.session.query(User).get(self.testuser.id)
+
+        likes = self.testuser.likes
+        self.assertEqual(len(likes), 1)
+        self.assertEqual(likes[0].id, 1234)
+
+    def test_message_like_no_authentication(self):
+        """Can user like a message without authentication?"""
+        
+        m = Message(
+            text="a test message to be liked",
+            user_id=self.testuser.id
+        )
+
+        db.session.add(m)
+        db.session.commit()
+
+        resp = self.client.post(f'/users/toggle_like/{m.id}', follow_redirects=True)
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn("Access unauthorized", str(resp.data))
