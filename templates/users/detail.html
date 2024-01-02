@@ -5,7 +5,7 @@
 <div id="warbler-hero" class="full-width" style="background-image: url({{ user.header_image_url }});">
 </div>
 <img src="{{ user.image_url }}" alt="Image for {{ user.username }}" id="profile-avatar">
-<div class="row full-width">
+<div class="row full-width mb-5">
   <div class="container">
     <div class="row justify-content-end">
       <div class="col-9">
@@ -34,7 +34,7 @@
               <a href="/users/{{ user.id }}/likes">{{ user.likes | length }}</a>
             </h4>
           </li>
-          <div class="ml-auto">
+          <div class="ml-auto mt-1">
             {% if g.user.id == user.id %}
             <a href="/users/profile" class="btn btn-outline-secondary">Edit Profile</a>
             <form method="POST" action="/users/delete" class="form-inline">
