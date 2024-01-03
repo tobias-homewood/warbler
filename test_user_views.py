@@ -56,6 +56,65 @@ class UserViewTestCase(TestCase):
         with self.client.session_transaction() as session:
             session[CURR_USER_KEY] = self.testuser.id
 
+    def test_add_message(self):
+        """Can use add a message?"""
+
+        with self.client as c:
+            self.login()
+
+            resp = c.post("/messages/new", data={"text": "Hello"}, follow_redirects=True)
+            self.assertEqual(resp.status_code, 200)
+
+            msg = Message.query.one()
+            self.assertEqual(msg.text, "Hello")
+
+    def test_add_message_no_authentication(self):
+        """Can use add a message without authentication?"""
+
+        with self.client as c:
+            resp = c.post("/messages/new", data={"text": "Hello"}, follow_redirects=True)
+            self.assertEqual(resp.status_code, 200)
+            self.assertIn("Access unauthorized", str(resp.data))
+
+    def test_delete_message(self):
+        """Can use delete a message?"""
+
+        with self.client as c:
+            self.login()
+
+            msg = Message(
+                text="test message",
+                user_id=self.testuser.id
+            )
+
+            db.session.add(msg)
+            db.session.commit()
+
+            resp = c.post(f"/messages/{msg.id}/delete", follow_redirects=True)
+            self.assertEqual(resp.status_code, 200)
+
+            # check the message was deleted
+            self.assertIsNone(db.session.query(Message).get(msg.id))
+
+    def test_delete_message_no_authentication(self):
+        """Can use delete a message without authentication?"""
+
+        with self.client as c:
+            msg = Message(
+                text="test message",
+                user_id=self.testuser.id
+            )
+
+            db.session.add(msg)
+            db.session.commit()
+
+            resp = c.post(f"/messages/{msg.id}/delete", follow_redirects=True)
+            self.assertEqual(resp.status_code, 200)
+            self.assertIn("Access unauthorized", str(resp.data))
+
+            # check the message was not deleted
+            self.assertIsNotNone(db.session.query(Message).get(msg.id))
+
     def test_list_users(self):
         """Can we view the list of users?"""
 
