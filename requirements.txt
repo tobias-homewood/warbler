@@ -12,7 +12,7 @@ Flask-Bcrypt==0.7.1
 Flask-DebugToolbar==0.10.1
 Flask-SQLAlchemy==2.3.2
 Flask-WTF==0.14.2
-gunicorn==21.2.0
+gunicorn==19.7.1
 importlib-metadata==6.7.0
 iniconfig==2.0.0
 ipython==7.0.1
